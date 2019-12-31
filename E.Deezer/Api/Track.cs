@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 using System.Threading.Tasks;
 
@@ -39,9 +37,9 @@ namespace E.Deezer.Api
         bool Explicit { get; }
 
         Task<bool> AddTrackToFavorite();
+
         Task<bool> RemoveTrackFromFavorite();
     }
-
 
     internal class Track : ObjectWithImage, ITrack, IDeserializable<IDeezerClient>
     {
@@ -105,12 +103,13 @@ namespace E.Deezer.Api
             set;
         }
 
-       
         public IAlbum Album => AlbumInternal;
 
         public IArtist Artist => ArtistInternal;
 
-        public DateTime TimeAdd => new DateTime(TimeAddInternal);
+        public DateTime TimeAdd => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            .Add(TimeSpan.FromSeconds((TimeAddInternal == 0 && TimeStamp > 0) ? TimeStamp : TimeAddInternal))
+            .ToLocalTime();
 
         public ITrack AlternativeTrack => AlternativeTrackInternal;
 
@@ -122,10 +121,8 @@ namespace E.Deezer.Api
 
         public string AlbumName => AlbumInternal?.Title ?? string.Empty;
 
-
         [Obsolete("Use of IsExplicit is encouraged")]
         public bool Explicit => IsExplicit;
-
 
         [JsonProperty(PropertyName = "share")]
         public string ShareLink
@@ -150,6 +147,13 @@ namespace E.Deezer.Api
 
         [JsonProperty(PropertyName = "time_add")]
         public long TimeAddInternal
+        {
+            get;
+            set;
+        }
+
+        [JsonProperty(PropertyName = "timestamp")]
+        public long TimeStamp
         {
             get;
             set;
@@ -211,7 +215,6 @@ namespace E.Deezer.Api
             set;
         }
 
-
         //IDeserializable
         public IDeezerClient Client
         {
@@ -219,8 +222,8 @@ namespace E.Deezer.Api
             set;
         }
 
-        public void Deserialize(IDeezerClient aClient) 
-        { 
+        public void Deserialize(IDeezerClient aClient)
+        {
             Client = aClient;
 
             if (ArtistInternal != null)
@@ -233,7 +236,6 @@ namespace E.Deezer.Api
                 AlbumInternal.Deserialize(aClient);
             }
         }
-
 
         //Tracks don't often come with their own images so if there is none, we can use that from the album in which it belongs.
         public override string GetPicture(PictureSize aSize)
@@ -248,13 +250,11 @@ namespace E.Deezer.Api
             return (baseResult) ? baseResult : AlbumInternal.HasPicture(aSize);
         }
 
-
-        public Task<bool> AddTrackToFavorite() 
+        public Task<bool> AddTrackToFavorite()
             => Client.User.AddTrackToFavourite(Id);
 
         public Task<bool> RemoveTrackFromFavorite()
             => Client.User.RemoveTrackFromFavourite(Id);
-
 
         public override string ToString()
             => string.Format("E.Deezer: Track({0} - ({1}))", Title, ArtistName);
