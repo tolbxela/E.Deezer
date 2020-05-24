@@ -111,6 +111,11 @@ namespace E.Deezer.Api
             .Add(TimeSpan.FromSeconds((TimeAddInternal == 0 && TimeStamp > 0) ? TimeStamp : TimeAddInternal))
             .ToLocalTime();
 
+        // .Net 4.6 Version
+        //public DateTimeOffset TimeAddUtc => DateTimeOffset.FromUnixTimeSeconds((TimeAddInternal == 0 && TimeStamp > 0) ? TimeStamp : TimeAddInternal);
+        public DateTimeOffset TimeAddUtc => new DateTimeOffset(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
+            .AddSeconds((TimeAddInternal == 0 && TimeStamp > 0) ? TimeStamp : TimeAddInternal);
+
         public ITrack AlternativeTrack => AlternativeTrackInternal;
 
         public IEnumerable<string> AvailableIn => AvailableInInternal;
